@@ -18,40 +18,45 @@
    - Разверните бота на сервере или локальной машине.
    - Запустите бота и убедитесь, что он работает правильно.
 
-Теперь давайте рассмотрим код на Python с использованием библиотеки telethon:
+5. Установите Telethon:
+   
+   pip install telethon
+   
 
-from telethon.sync import TelegramClient
-from telethon.tl.functions.channels import InviteToChannelRequest
-from telethon.tl.functions.messages import GetDialogsRequest
-from telethon.tl.types import InputPeerEmpty
 
-api_id = 'YOUR_API_ID'
-api_hash = 'YOUR_API_HASH'
-phone = 'YOUR_PHONE_NUMBER'
+from telethon import TelegramClient, events, sync
+
+# Эти данные необходимо получить на my.telegram.org
+api_id = 'ВАШ_API_ID'
+api_hash = 'ВАШ_API_HASH'
+
+# Создание клиента
 client = TelegramClient('session_name', api_id, api_hash)
 
-client.start(phone=phone)
-
-async def add_users(source_group, target_group):
-    # Получение списка участников из исходной группы
-    source_group_entity = await client.get_entity(source_group)
-    source_members = await client.get_participants(source_group_entity)
-
-    # Получение объекта целевой группы
-    target_group_entity = await client.get_entity(target_group)
-
-    # Добавление участников в целевую группу
-    for user in source_members:
+# Асинхронная функция для копирования участников
+async def copy_members(from_chat, to_chat):
+    # Получаем информацию о чатах
+    from_chat = await client.get_input_entity(from_chat)
+    to_chat = await client.get_input_entity(to_chat)
+    
+    # Получаем всех участников чата
+    members = await client.get_participants(from_chat)
+    
+    # Добавляем участников в новый чат
+    for member in members:
         try:
-            print(f"Добавление {user.id} в {target_group}")
-            await client(InviteToChannelRequest(target_group_entity, [user]))
+            await client.edit_admin(to_chat, member, is_admin=True)
+            print(f"Участник {member.id} добавлен.")
         except Exception as e:
-            print(e)
-            continue
+            print(f"Не удалось добавить {member.id}: {e}")
+        await asyncio.sleep(1)  # Задержка для избежания ограничений
 
-# Замените 'source_group' и 'target_group' на названия или ID ваших групп
+# Запуск клиента
 with client:
-    client.loop.run_until_complete(add_users('source_group', 'target_group'))
+    client.loop.run_until_complete(copy_members('ИСХОДНЫЙ_ЧАТ', 'ЦЕЛЕВОЙ_ЧАТ'))
+
+
+Вам нужно заменить 'ВАШ_API_ID', 'ВАШ_API_HASH', 'ИСХОДНЫЙ_ЧАТ', и 'ЦЕЛЕВОЙ_ЧАТ' на реальные данные. Получить api_id и api_hash можно на сайте my.telegram.org, после регистрации приложения. Имена чатов должны быть именами пользователя или идентификаторами чата, которые можно получить, используя функции библиотеки Telethon.
 
 
 Важные замечания:
